@@ -1,0 +1,123 @@
+import React, { useState } from 'react';
+import { useAuth } from '../App';
+import { CHARACTER_CLASSES, CLASS_ABILITIES } from '../data';
+import { combatUtils } from '../utils';
+
+export const CharacterCreation = () => {
+    const [selectedClass, setSelectedClass] = useState('');
+    const [characterName, setCharacterName] = useState('');
+    const { user, updateUser } = useAuth();
+
+    const handleCreateCharacter = () => {
+        if (!selectedClass || !characterName) return;
+
+        const classData = CHARACTER_CLASSES[selectedClass];
+        
+        const tempCharacter = {
+            class: selectedClass,
+            level: 1,
+            stats: { ...classData.baseStats }
+        };
+        
+        const combatStats = combatUtils.getCharacterCombatStats(tempCharacter);
+        
+        const character = {
+            name: characterName,
+            class: selectedClass,
+            level: 1,
+            xp: 0,
+            xpToNext: 100,
+            stats: { ...classData.baseStats },
+            availableStatPoints: 0,
+            health: combatStats.maxHealth,
+            maxHealth: combatStats.maxHealth,
+            mana: combatStats.maxMana,
+            maxMana: combatStats.maxMana,
+            equipment: {
+                weapon: null,
+                armor: null,
+                accessory: null
+            },
+            inventory: [],
+            inkDrops: 50,
+            luckStat: 0,
+            achievementLevel: 0,
+            lastRegenTime: Date.now(),
+            skillXp: {}
+        };
+
+        updateUser({ character });
+    };
+
+    return (
+        <div className="max-w-4xl mx-auto p-6">
+            <h2 className="text-4xl font-bold text-center mb-8 glow-text">Choose Your Path</h2>
+            
+            <div className="mb-8">
+                <label className="block text-xl font-medium mb-4">Character Name</label>
+                <input
+                    type="text"
+                    value={characterName}
+                    onChange={(e) => setCharacterName(e.target.value)}
+                    className="w-full max-w-md p-3 bg-fantasy-700 border border-fantasy-500 rounded focus:border-fantasy-300 focus:outline-none"
+                    placeholder="Enter your character's name"
+                />
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-6 mb-8">
+                {Object.entries(CHARACTER_CLASSES).map(([key, classData]) => {
+                    const abilities = CLASS_ABILITIES[key] || [];
+                    return (
+                        <div
+                            key={key}
+                            onClick={() => setSelectedClass(key)}
+                            className={`p-6 rounded-lg border-2 cursor-pointer transition-all ${
+                                selectedClass === key
+                                    ? 'border-fantasy-300 bg-fantasy-700'
+                                    : 'border-fantasy-600 bg-fantasy-800 hover:border-fantasy-400'
+                            }`}
+                        >
+                            <h3 className="text-xl font-bold mb-2">{classData.name}</h3>
+                            <p className="text-fantasy-200 mb-4">{classData.description}</p>
+                            
+                            <div className="text-sm mb-4">
+                                <p className="font-medium text-fantasy-300 mb-2">Base Stats:</p>
+                                <div className="grid grid-cols-2 gap-1">
+                                    {Object.entries(classData.baseStats).map(([stat, value]) => (
+                                        <div key={stat} className="flex justify-between">
+                                            <span className={`capitalize ${classData.primaryStats.includes(stat.charAt(0).toUpperCase() + stat.slice(1)) ? 'text-fantasy-200 font-medium' : 'text-fantasy-400'}`}>
+                                                {stat}:
+                                            </span>
+                                            <span>{value}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className="text-sm">
+                                <p className="font-medium text-fantasy-300 mb-2">Class Abilities:</p>
+                                <div className="space-y-1">
+                                    {abilities.slice(0, 2).map((ability, index) => (
+                                        <div key={index} className="text-fantasy-400 text-xs">
+                                            <span className="text-fantasy-200">Lv{ability.level}:</span> {ability.name}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    );
+                })}
+            </div>
+
+            <div className="text-center">
+                <button
+                    onClick={handleCreateCharacter}
+                    disabled={!selectedClass || !characterName}
+                    className="bg-fantasy-600 hover:bg-fantasy-500 disabled:bg-fantasy-700 disabled:opacity-50 text-white font-bold py-3 px-8 rounded text-lg transition-colors"
+                >
+                    Begin Your Journey
+                </button>
+            </div>
+        </div>
+    );
+};
