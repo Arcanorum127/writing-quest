@@ -1,28 +1,33 @@
+// src/data/index.js - REPLACE COMPLETELY
+
+// Export achievements
+export { ACHIEVEMENTS } from './achievements';
+
 // Character classes data
 export const CHARACTER_CLASSES = {
     chronicler: {
         name: "The Chronicler",
         description: "Tank/Support - Masters of endurance and protection",
         primaryStats: ["Focus", "Persistence"],
-        baseStats: { focus: 10, creativity: 8, persistence: 13, technique: 8 } // FIXED: 8/10/13 distribution
+        baseStats: { focus: 10, creativity: 8, persistence: 13, technique: 8 }
     },
     wordsmith: {
         name: "The Wordsmith", 
         description: "Physical DPS - Precise and powerful strikes",
         primaryStats: ["Technique", "Creativity"],
-        baseStats: { focus: 8, creativity: 10, persistence: 8, technique: 13 } // FIXED: 8/10/13 distribution
+        baseStats: { focus: 8, creativity: 10, persistence: 8, technique: 13 }
     },
     plotweaver: {
         name: "The Plotweaver",
         description: "Control Mage - Strategic magical combat",
         primaryStats: ["Focus", "Technique"], 
-        baseStats: { focus: 13, creativity: 8, persistence: 8, technique: 10 } // FIXED: 8/10/13 distribution
+        baseStats: { focus: 13, creativity: 8, persistence: 8, technique: 10 }
     },
     dialogist: {
         name: "The Dialogist",
         description: "Hybrid Support - Versatile and adaptive",
         primaryStats: ["Persistence", "Creativity"],
-        baseStats: { focus: 8, creativity: 13, persistence: 10, technique: 8 } // FIXED: 8/10/13 distribution
+        baseStats: { focus: 8, creativity: 13, persistence: 10, technique: 8 }
     }
 };
 

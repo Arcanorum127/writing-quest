@@ -1,7 +1,9 @@
+// src/components/WritingSession.js - REPLACE COMPLETELY
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../App';
 import { WRITING_SKILLS } from '../data';
 import { skillUtils } from '../utils';
+import { useAchievementChecker } from './Achievements';
 
 export const WritingSession = () => {
     const [isSessionActive, setIsSessionActive] = useState(false);
@@ -12,6 +14,7 @@ export const WritingSession = () => {
     const [sessionStartTime, setSessionStartTime] = useState(null);
     const [currentTimer, setCurrentTimer] = useState(0);
     const { user, updateUser } = useAuth();
+    const { checkAndAwardAchievements } = useAchievementChecker();
 
     const calculateSkillPoints = (words, minutes) => {
         const basePoints = Math.floor(words / 500);
@@ -56,6 +59,21 @@ export const WritingSession = () => {
         setShowSkillAssessment(true);
     };
 
+    const checkDailyGoalCompletion = (character, sessions, goals) => {
+        if (!goals) return false;
+        
+        const today = new Date().toISOString().split('T')[0];
+        const todaysSessions = sessions.filter(session => 
+            session.date.split('T')[0] === today
+        );
+        
+        const todaysWords = todaysSessions.reduce((sum, session) => sum + session.wordCount, 0);
+        const previousTodaysWords = todaysWords - parseInt(wordCount);
+        
+        // Check if we just completed the daily goal
+        return previousTodaysWords < goals.dailyTarget && todaysWords >= goals.dailyTarget;
+    };
+
     const handleSkillAssessment = () => {
         const session = {
             id: Date.now(),
@@ -70,6 +88,7 @@ export const WritingSession = () => {
         const character = { ...user.character };
         character.xp += xpGained;
         
+        // Level up logic
         while (character.xp >= character.xpToNext) {
             character.xp -= character.xpToNext;
             character.level += 1;
@@ -77,6 +96,7 @@ export const WritingSession = () => {
             character.xpToNext = Math.floor(100 * Math.pow(character.level, 1.5));
         }
 
+        // Update skill XP
         if (!character.skillXp) character.skillXp = {};
         Object.entries(skillPoints).forEach(([skill, points]) => {
             if (points > 0) {
@@ -84,14 +104,42 @@ export const WritingSession = () => {
             }
         });
 
+        // Update writing goals progress
         const goals = user.writingGoals ? {
             ...user.writingGoals,
             currentProgress: user.writingGoals.currentProgress + parseInt(wordCount)
         } : null;
 
         const sessions = [...(user.writingSessions || []), session];
+        
+        // Check for daily goal completion before updating
+        const completedDailyGoal = checkDailyGoalCompletion(character, sessions, goals);
+        
+        // Update achievement tracking stats
+        character.sessionsCompleted = (character.sessionsCompleted || 0) + 1;
+        character.totalWordsWritten = (character.totalWordsWritten || 0) + parseInt(wordCount);
+        
+        if (completedDailyGoal) {
+            character.dailyGoalsCompleted = (character.dailyGoalsCompleted || 0) + 1;
+            // Bonus rewards for daily goal completion
+            character.xp += 25;
+            character.inkDrops = (character.inkDrops || 0) + 15;
+        }
+
+        // Check if goal is completed
+        if (goals && goals.currentProgress >= goals.totalWords && !character.goalsCompleted) {
+            character.goalsCompleted = (character.goalsCompleted || 0) + 1;
+        }
+
         updateUser({ 
             character, 
+            writingSessions: sessions,
+            writingGoals: goals
+        });
+
+        // Check for newly unlocked achievements
+        checkAndAwardAchievements({
+            character,
             writingSessions: sessions,
             writingGoals: goals
         });
@@ -132,7 +180,24 @@ export const WritingSession = () => {
         return { ...skillData, progress };
     };
 
+    // Calculate potential achievements from this session
+    const getPotentialAchievements = () => {
+        if (!wordCount || !sessionMinutes) return [];
+        
+        const achievements = [];
+        const words = parseInt(wordCount);
+        const minutes = parseInt(sessionMinutes);
+        
+        if (words >= 1000) achievements.push("Thousand Words");
+        if (minutes >= 180) achievements.push("Marathon Writer");
+        if (!user.writingSessions || user.writingSessions.length === 0) achievements.push("First Words");
+        
+        return achievements;
+    };
+
     if (showSkillAssessment) {
+        const potentialAchievements = getPotentialAchievements();
+        
         return (
             <div className="max-w-4xl mx-auto space-y-6">
                 <div className="bg-fantasy-800 p-8 rounded-lg border border-fantasy-600">
@@ -156,6 +221,19 @@ export const WritingSession = () => {
                                 <div className="text-fantasy-200">Words/Minute</div>
                             </div>
                         </div>
+                        
+                        {potentialAchievements.length > 0 && (
+                            <div className="mt-6 p-4 bg-yellow-900/30 border border-yellow-400 rounded-lg">
+                                <h5 className="text-yellow-400 font-bold mb-2">🏆 Potential Achievements</h5>
+                                <div className="flex flex-wrap gap-2 justify-center">
+                                    {potentialAchievements.map(achievement => (
+                                        <span key={achievement} className="text-yellow-300 text-sm bg-yellow-900/50 px-2 py-1 rounded">
+                                            {achievement}
+                                        </span>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     <div className="mb-6">
@@ -299,13 +377,28 @@ export const WritingSession = () => {
                 </div>
 
                 {wordCount && sessionMinutes && !isSessionActive && (
-                    <div className="mt-6 bg-fantasy-700 p-4 rounded-lg">
-                        <p className="text-fantasy-200">
-                            This session will give you <span className="font-bold text-fantasy-100">{maxSkillPoints}</span> skill XP to allocate across your writing skills.
-                        </p>
-                        <p className="text-fantasy-400 text-sm mt-2">
-                            Skill XP is earned based on words written ({Math.floor(parseInt(wordCount) / 500)} XP) plus time bonus ({Math.floor(Math.min(parseInt(sessionMinutes), 120) / 60)} XP).
-                        </p>
+                    <div className="mt-6 space-y-4">
+                        <div className="bg-fantasy-700 p-4 rounded-lg">
+                            <p className="text-fantasy-200">
+                                This session will give you <span className="font-bold text-fantasy-100">{maxSkillPoints}</span> skill XP to allocate across your writing skills.
+                            </p>
+                            <p className="text-fantasy-400 text-sm mt-2">
+                                Skill XP is earned based on words written ({Math.floor(parseInt(wordCount) / 500)} XP) plus time bonus ({Math.floor(Math.min(parseInt(sessionMinutes), 120) / 60)} XP).
+                            </p>
+                        </div>
+                        
+                        {getPotentialAchievements().length > 0 && (
+                            <div className="bg-yellow-900/20 border border-yellow-400/50 p-4 rounded-lg">
+                                <h4 className="text-yellow-400 font-bold mb-2">🏆 Potential Achievement Unlocks</h4>
+                                <div className="flex flex-wrap gap-2">
+                                    {getPotentialAchievements().map(achievement => (
+                                        <span key={achievement} className="text-yellow-300 text-sm bg-yellow-900/50 px-2 py-1 rounded">
+                                            {achievement}
+                                        </span>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
                     </div>
                 )}
 

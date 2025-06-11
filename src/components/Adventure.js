@@ -1,7 +1,9 @@
+// src/components/Adventure.js - REPLACE COMPLETELY
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../App';
 import { COMBAT_AREAS, CHARACTER_CLASSES } from '../data';
 import { combatUtils, equipmentUtils } from '../utils';
+import { useAchievementChecker } from './Achievements';
 
 export const Adventure = () => {
     const [selectedArea, setSelectedArea] = useState('');
@@ -16,6 +18,7 @@ export const Adventure = () => {
     const [lootGained, setLootGained] = useState([]);
     const [currencyGained, setCurrencyGained] = useState(0);
     const { user, updateUser } = useAuth();
+    const { checkAndAwardAchievements } = useAchievementChecker();
 
     useEffect(() => {
         if (user?.character && combatState === 'combat') {
@@ -110,7 +113,6 @@ export const Adventure = () => {
         }
     };
 
-    // FIXED: Combat XP removal - no XP from combat anymore
     const handleVictory = () => {
         const currency = equipmentUtils.generateCurrency(currentMonster.level, currentMonster.tierData.multiplier);
         const loot = equipmentUtils.generateLoot(
@@ -119,7 +121,6 @@ export const Adventure = () => {
             user.character.luckStat || 0
         );
 
-        // REMOVED: XP gain from combat - only currency and loot now
         addToCombatLog(`You gained ${currency} Ink Drops!`);
         setCurrencyGained(currency);
 
@@ -128,14 +129,29 @@ export const Adventure = () => {
         character.mana = playerCombatStats.currentMana;
         character.inkDrops = (character.inkDrops || 0) + currency;
 
+        // Track achievement progress
+        character.monstersDefeated = (character.monstersDefeated || 0) + 1;
+        
+        // Track elite monsters defeated
+        if (currentMonster.tier !== 'normal') {
+            character.eliteMonstersDefeated = (character.eliteMonstersDefeated || 0) + 1;
+        }
+
         if (loot) {
             if (!character.inventory) character.inventory = [];
             character.inventory.push(loot);
             addToCombatLog(`You found: ${loot.name}!`);
             setLootGained([loot]);
+            
+            // Track equipment found for achievements
+            character.equipmentFound = (character.equipmentFound || 0) + 1;
         }
 
         updateUser({ character });
+        
+        // Check for combat-related achievements
+        checkAndAwardAchievements({ character });
+        
         setCombatState('victory');
     };
 
@@ -172,10 +188,9 @@ export const Adventure = () => {
         switch (ability.effect) {
             case 'plot_armor':
                 addToCombatLog(`${ability.name}: You gain magical protection!`);
-                // Add buff logic here
                 break;
             case 'heal':
-                const healAmount = Math.floor(playerCombatStats.maxHealth * 0.3);
+                const healAmount = Math.floor(playerCombatStats.maxHealth * 0.25);
                 setPlayerCombatStats(prev => ({
                     ...prev,
                     currentHealth: Math.min(prev.maxHealth, prev.currentHealth + healAmount)
@@ -184,7 +199,7 @@ export const Adventure = () => {
                 break;
             case 'power_attack':
                 const isCrit = combatUtils.isCriticalHit(playerCombatStats);
-                const damage = combatUtils.calculateDamage(playerCombatStats, monsterCombatStats, isCrit, 2.0);
+                const damage = combatUtils.calculateDamage(playerCombatStats, monsterCombatStats, isCrit, 1.8);
                 const critText = isCrit ? " (Critical Hit!)" : "";
                 addToCombatLog(`${ability.name}: You deal ${damage} damage${critText}!`);
 
@@ -198,15 +213,53 @@ export const Adventure = () => {
                     return;
                 }
                 break;
+            case 'multi_attack':
+                let totalDamage = 0;
+                for (let i = 0; i < 3; i++) {
+                    const hitCrit = combatUtils.isCriticalHit(playerCombatStats);
+                    const hitDamage = combatUtils.calculateDamage(playerCombatStats, monsterCombatStats, hitCrit, 0.6);
+                    totalDamage += hitDamage;
+                }
+                addToCombatLog(`${ability.name}: You strike 3 times for ${totalDamage} total damage!`);
+                
+                const newHealth = Math.max(0, monsterCombatStats.currentHealth - totalDamage);
+                setMonsterCombatStats(prev => ({ ...prev, currentHealth: newHealth }));
+
+                if (newHealth <= 0) {
+                    addToCombatLog(`${currentMonster.displayName} is defeated!`);
+                    setTimeout(() => handleVictory(), 1000);
+                    setIsAnimating(false);
+                    return;
+                }
+                break;
+            case 'magic_multi':
+                const magicDamage = combatUtils.calculateDamage(playerCombatStats, monsterCombatStats, false, 0.8) * 3;
+                addToCombatLog(`${ability.name}: Magical tomes deal ${magicDamage} damage!`);
+
+                const newMagicHealth = Math.max(0, monsterCombatStats.currentHealth - magicDamage);
+                setMonsterCombatStats(prev => ({ ...prev, currentHealth: newMagicHealth }));
+
+                if (newMagicHealth <= 0) {
+                    addToCombatLog(`${currentMonster.displayName} is defeated!`);
+                    setTimeout(() => handleVictory(), 1000);
+                    setIsAnimating(false);
+                    return;
+                }
+                break;
             case 'mana_restore':
-                const manaAmount = 15;
+                const manaAmount = 12;
                 setPlayerCombatStats(prev => ({
                     ...prev,
                     currentMana: Math.min(prev.maxMana, prev.currentMana + manaAmount)
                 }));
                 addToCombatLog(`${ability.name}: You restore ${manaAmount} mana!`);
                 break;
-            // Add more ability effects as needed
+            case 'enemy_debuff':
+                addToCombatLog(`${ability.name}: Enemy damage reduced!`);
+                break;
+            case 'crit_boost':
+                addToCombatLog(`${ability.name}: Critical hit chance increased!`);
+                break;
         }
 
         setTimeout(() => {
@@ -255,6 +308,21 @@ export const Adventure = () => {
                 <div className="text-center">
                     <h2 className="text-3xl font-bold mb-4 glow-text">Choose Your Adventure</h2>
                     <p className="text-fantasy-300">Select an area to explore and battle monsters for Ink Drops and equipment!</p>
+                    
+                    {/* Show combat achievements progress */}
+                    {user?.character && (
+                        <div className="mt-4 flex justify-center gap-6 text-sm">
+                            <span className="text-fantasy-400">
+                                Monsters Defeated: <span className="text-fantasy-200 font-bold">{user.character.monstersDefeated || 0}</span>
+                            </span>
+                            <span className="text-fantasy-400">
+                                Elite Defeated: <span className="text-purple-400 font-bold">{user.character.eliteMonstersDefeated || 0}</span>
+                            </span>
+                            <span className="text-fantasy-400">
+                                Equipment Found: <span className="text-yellow-400 font-bold">{user.character.equipmentFound || 0}</span>
+                            </span>
+                        </div>
+                    )}
                 </div>
 
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -285,7 +353,7 @@ export const Adventure = () => {
                         return (
                             <div
                                 key={key}
-                                className={`bg-fantasy-800 p-6 rounded-lg border-2 ${borderColor} transition-colors cursor-pointer`}
+                                className={`bg-fantasy-800 p-6 rounded-lg border-2 ${borderColor} transition-colors cursor-pointer hover:transform hover:scale-105`}
                                 onClick={() => startEncounter(key)}
                             >
                                 <h3 className="text-xl font-bold mb-2">{area.name}</h3>
@@ -314,7 +382,7 @@ export const Adventure = () => {
                         <h3 className="text-xl font-bold mb-4">Your {CHARACTER_CLASSES[user.character.class].name} Abilities</h3>
                         <div className="grid md:grid-cols-2 gap-4">
                             {availableAbilities.map((ability, index) => (
-                                <div key={index} className="bg-fantasy-700 p-4 rounded">
+                                <div key={index} className="bg-fantasy-700 p-4 rounded hover:bg-fantasy-600 transition-colors">
                                     <h4 className="font-bold text-fantasy-200">{ability.name}</h4>
                                     <p className="text-sm text-fantasy-300 mb-2">{ability.description}</p>
                                     <div className="text-xs text-fantasy-400">
@@ -409,7 +477,6 @@ export const Adventure = () => {
                         </button>
                     </div>
 
-                    {/* FIXED: Abilities in combat */}
                     {availableAbilities.length > 0 && (
                         <div className="mt-4">
                             <h5 className="text-sm font-medium mb-2">Abilities</h5>
@@ -476,6 +543,17 @@ export const Adventure = () => {
                                     <span className={`font-medium ${equipmentUtils.getRarityColorClass(item.rarity)}`}>{item.name}</span>
                                 </div>
                             ))}
+                            
+                            {/* Show achievement progress hints */}
+                            <div className="mt-4 text-sm text-fantasy-400">
+                                <div>Total Monsters Defeated: {(user?.character?.monstersDefeated || 0)}</div>
+                                {currentMonster?.tier !== 'normal' && (
+                                    <div>Elite Monsters Defeated: {(user?.character?.eliteMonstersDefeated || 0)}</div>
+                                )}
+                                {lootGained.length > 0 && (
+                                    <div>Equipment Found: {(user?.character?.equipmentFound || 0)}</div>
+                                )}
+                            </div>
                         </div>
                     )}
 

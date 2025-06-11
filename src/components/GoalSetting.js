@@ -1,6 +1,8 @@
+// src/components/GoalSetting.js - REPLACE COMPLETELY
 import React, { useState } from 'react';
 import { useAuth } from '../App';
 import { GOAL_TEMPLATES } from '../data';
+import { EnhancedGoalDisplay } from './EnhancedGoalTracking';
 
 export const GoalSetting = () => {
     const [wordGoal, setWordGoal] = useState('');
@@ -17,6 +19,11 @@ export const GoalSetting = () => {
         sunday: true
     });
     const { user, updateUser } = useAuth();
+
+    // If user has writing goals, show enhanced display instead
+    if (user?.writingGoals) {
+        return <EnhancedGoalDisplay />;
+    }
 
     const handleTemplateSelect = (templateKey) => {
         const template = GOAL_TEMPLATES[templateKey];
@@ -55,7 +62,8 @@ export const GoalSetting = () => {
             dailyTarget,
             availableWritingDays,
             currentProgress: 0,
-            template: selectedTemplate
+            template: selectedTemplate,
+            name: selectedTemplate ? GOAL_TEMPLATES[selectedTemplate].name : 'Custom Writing Goal'
         };
 
         updateUser({ writingGoals: goals });
@@ -67,90 +75,6 @@ export const GoalSetting = () => {
             [day]: !prev[day]
         }));
     };
-
-    if (user?.writingGoals) {
-        const progressPercentage = Math.min((user.writingGoals.currentProgress / user.writingGoals.totalWords) * 100, 100);
-        const daysRemaining = Math.max(0, Math.ceil((new Date(user.writingGoals.endDate) - new Date()) / (1000 * 60 * 60 * 24)));
-        const wordsRemaining = Math.max(0, user.writingGoals.totalWords - user.writingGoals.currentProgress);
-        
-        return (
-            <div className="max-w-4xl mx-auto space-y-6">
-                <div className="bg-fantasy-800 p-8 rounded-lg border border-fantasy-600">
-                    <h3 className="text-3xl font-bold mb-6 glow-text text-center">Your Writing Quest</h3>
-                    
-                    <div className="flex justify-center mb-8">
-                        <div className="relative w-48 h-48">
-                            <svg className="w-48 h-48 goal-progress-ring" viewBox="0 0 120 120">
-                                <circle
-                                    cx="60"
-                                    cy="60"
-                                    r="54"
-                                    fill="transparent"
-                                    stroke="currentColor"
-                                    strokeWidth="6"
-                                    className="text-fantasy-700"
-                                />
-                                <circle
-                                    cx="60"
-                                    cy="60"
-                                    r="54"
-                                    fill="transparent"
-                                    stroke="currentColor"
-                                    strokeWidth="6"
-                                    strokeDasharray={`${2 * Math.PI * 54}`}
-                                    strokeDashoffset={`${2 * Math.PI * 54 * (1 - progressPercentage / 100)}`}
-                                    className="text-fantasy-300 transition-all duration-1000"
-                                    strokeLinecap="round"
-                                />
-                            </svg>
-                            <div className="absolute inset-0 flex items-center justify-center text-center">
-                                <div>
-                                    <div className="text-3xl font-bold text-fantasy-200">{progressPercentage.toFixed(1)}%</div>
-                                    <div className="text-sm text-fantasy-400">Complete</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="grid md:grid-cols-4 gap-6 mb-8">
-                        <div className="bg-fantasy-700 p-6 rounded-lg text-center">
-                            <div className="text-2xl font-bold text-fantasy-300 mb-2">
-                                {user.writingGoals.currentProgress.toLocaleString()}
-                            </div>
-                            <div className="text-fantasy-400 text-sm">Words Written</div>
-                        </div>
-                        <div className="bg-fantasy-700 p-6 rounded-lg text-center">
-                            <div className="text-2xl font-bold text-fantasy-300 mb-2">
-                                {wordsRemaining.toLocaleString()}
-                            </div>
-                            <div className="text-fantasy-400 text-sm">Words Remaining</div>
-                        </div>
-                        <div className="bg-fantasy-700 p-6 rounded-lg text-center">
-                            <div className="text-2xl font-bold text-fantasy-300 mb-2">
-                                {user.writingGoals.dailyTarget.toLocaleString()}
-                            </div>
-                            <div className="text-fantasy-400 text-sm">Daily Target</div>
-                        </div>
-                        <div className="bg-fantasy-700 p-6 rounded-lg text-center">
-                            <div className="text-2xl font-bold text-fantasy-300 mb-2">
-                                {daysRemaining}
-                            </div>
-                            <div className="text-fantasy-400 text-sm">Days Remaining</div>
-                        </div>
-                    </div>
-
-                    <div className="flex justify-center">
-                        <button
-                            onClick={() => updateUser({ writingGoals: null })}
-                            className="bg-red-600 hover:bg-red-500 text-white font-bold py-3 px-6 rounded-lg transition-colors"
-                        >
-                            Reset Quest
-                        </button>
-                    </div>
-                </div>
-            </div>
-        );
-    }
 
     return (
         <div className="max-w-4xl mx-auto space-y-6">

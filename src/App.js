@@ -1,3 +1,4 @@
+// src/App.js - REPLACE COMPLETELY
 import React, { useState, useEffect, createContext, useContext } from 'react';
 import './App.css';
 
@@ -16,7 +17,9 @@ import {
     WritingSession, 
     Adventure, 
     Inventory, 
-    Store 
+    Store,
+    AchievementPopup,
+    useAchievementChecker
 } from './components';
 
 // Auth Context
@@ -75,7 +78,8 @@ const AuthProvider = ({ children }) => {
             character: null,
             writingGoals: null,
             writingSessions: [],
-            writingSkills: {}
+            writingSkills: {},
+            completedGoals: []
         };
         users.push(newUser);
         storage.save('users', users);
@@ -131,6 +135,7 @@ const App = () => {
     const [authView, setAuthView] = useState('login');
     const [currentView, setCurrentView] = useState('dashboard');
     const { user, loading } = useAuth();
+    const { pendingAchievement, closePendingAchievement } = useAchievementChecker();
 
     useEffect(() => {
         setCurrentView('dashboard');
@@ -175,6 +180,12 @@ const App = () => {
                 {currentView === 'inventory' && <Inventory />}
                 {currentView === 'store' && <Store />}
             </main>
+            
+            {/* Global Achievement Popup */}
+            <AchievementPopup 
+                achievement={pendingAchievement} 
+                onClose={closePendingAchievement} 
+            />
         </div>
     );
 };

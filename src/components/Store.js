@@ -1,27 +1,41 @@
+// src/components/Store.js - REPLACE COMPLETELY
 import React, { useState } from 'react';
 import { useAuth } from '../App';
 import { STORE_DATABASE } from '../data';
-import { storeUtils, equipmentUtils, storage } from '../utils';
+import { equipmentUtils } from '../utils';
+import { useAchievementChecker } from './Achievements';
 
 export const Store = () => {
     const { user, updateUser } = useAuth();
     const [activeTab, setActiveTab] = useState('equipment');
     const [purchaseMessage, setPurchaseMessage] = useState('');
+    const { checkAndAwardAchievements } = useAchievementChecker();
 
     const buyItem = (itemId, category) => {
-        const success = storeUtils.buyItem(user.id, itemId, category);
+        const item = STORE_DATABASE[category]?.find(i => i.id === itemId);
+        if (!item) return;
         
-        if (success) {
-            setPurchaseMessage('Purchase successful!');
-            const users = storage.load('users') || [];
-            const updatedUser = users.find(u => u.id === user.id);
-            if (updatedUser) {
-                updateUser(updatedUser);
-            }
-        } else {
+        const inkDrops = user.character?.inkDrops || 0;
+        if (inkDrops < item.cost) {
             setPurchaseMessage('Not enough Ink Drops!');
+            setTimeout(() => setPurchaseMessage(''), 3000);
+            return;
         }
         
+        const character = { ...user.character };
+        character.inkDrops = inkDrops - item.cost;
+        character.inkDropsSpent = (character.inkDropsSpent || 0) + item.cost;
+        
+        if (category === 'equipment') {
+            if (!character.inventory) character.inventory = [];
+            character.inventory.push({ ...item, instanceId: Date.now() });
+            character.equipmentFound = (character.equipmentFound || 0) + 1;
+        }
+        
+        updateUser({ character });
+        checkAndAwardAchievements({ character });
+        
+        setPurchaseMessage('Purchase successful!');
         setTimeout(() => setPurchaseMessage(''), 3000);
     };
 
@@ -76,6 +90,9 @@ export const Store = () => {
                 <div className="flex justify-center items-center gap-4 text-fantasy-300">
                     <span className="flex items-center gap-2">
                         <span>Your Ink Drops: <span className="text-fantasy-200 font-bold text-2xl">{user.character?.inkDrops || 0}</span></span>
+                    </span>
+                    <span className="text-fantasy-400">
+                        Spent: <span className="text-purple-400 font-bold">{user.character?.inkDropsSpent || 0}</span>
                     </span>
                 </div>
                 {purchaseMessage && (
