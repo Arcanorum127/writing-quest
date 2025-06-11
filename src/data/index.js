@@ -1,7 +1,8 @@
-// src/data/index.js - REPLACE COMPLETELY
 
 // Export achievements
 export { ACHIEVEMENTS } from './achievements';
+
+export { WRITING_PROMPTS, WRITING_PROJECTS } from './writingPrompts';
 
 // Character classes data
 export const CHARACTER_CLASSES = {

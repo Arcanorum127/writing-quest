@@ -1,4 +1,3 @@
-// src/App.js - REPLACE COMPLETELY
 import React, { useState, useEffect, createContext, useContext } from 'react';
 import './App.css';
 
@@ -18,6 +17,7 @@ import {
     Adventure, 
     Inventory, 
     Store,
+    Analytics, // New analytics import
     AchievementPopup,
     useAchievementChecker
 } from './components';
@@ -144,7 +144,7 @@ const App = () => {
     if (loading) {
         return (
             <div className="min-h-screen fantasy-gradient flex items-center justify-center">
-                <div className="text-2xl font-bold glow-text">Loading...</div>
+                <div className="text-2xl font-bold glow-text">Loading Writing Quest...</div>
             </div>
         );
     }
@@ -176,6 +176,7 @@ const App = () => {
                 {currentView === 'dashboard' && <Dashboard />}
                 {currentView === 'goals' && <GoalSetting />}
                 {currentView === 'session' && <WritingSession />}
+                {currentView === 'analytics' && <Analytics />}
                 {currentView === 'adventure' && <Adventure />}
                 {currentView === 'inventory' && <Inventory />}
                 {currentView === 'store' && <Store />}

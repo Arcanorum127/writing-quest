@@ -72,7 +72,7 @@ export const CharacterCreation = () => {
             <div className="bg-blue-900/20 border border-blue-400 rounded-lg p-4 mb-8">
                 <h3 className="font-bold text-blue-200 mb-2">✨ Balanced Character System</h3>
                 <p className="text-blue-100 text-sm">
-                    Characters now use a balanced stat system (8/10/13 distribution) with enhanced combat mechanics for better gameplay experience.
+                    Characters now use a balanced stat system (8/10/13 distribution) with  combat mechanics for better gameplay experience.
                 </p>
             </div>
             

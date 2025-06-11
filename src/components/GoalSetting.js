@@ -20,7 +20,7 @@ export const GoalSetting = () => {
     });
     const { user, updateUser } = useAuth();
 
-    // If user has writing goals, show enhanced display instead
+    // If user has writing goals, show  display instead
     if (user?.writingGoals) {
         return <EnhancedGoalDisplay />;
     }

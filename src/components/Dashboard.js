@@ -1,8 +1,7 @@
-// src/components/Dashboard.js - REPLACE COMPLETELY
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../App';
 import { CHARACTER_CLASSES } from '../data';
-import { combatUtils, streakUtils } from '../utils';
+import { combatUtils, streakUtils, analyticsUtils } from '../utils';
 import { AchievementSection, AchievementPopup, useAchievementChecker } from './Achievements';
 
 const StatAllocation = () => {
@@ -161,6 +160,72 @@ const DailyProgress = () => {
     );
 };
 
+const QuickProductivityInsights = () => {
+    const { user } = useAuth();
+    const [insights, setInsights] = useState(null);
+
+    useEffect(() => {
+        if (user?.writingSessions && user.writingSessions.length >= 3) {
+            const calculated = analyticsUtils.calculateProductivityInsights(user.writingSessions);
+            setInsights(calculated);
+        }
+    }, [user?.writingSessions]);
+
+    if (!insights) {
+        return (
+            <div className="bg-fantasy-800 p-4 rounded-lg border border-fantasy-600 text-center">
+                <div className="text-fantasy-400 text-2xl mb-2">📈</div>
+                <p className="text-sm text-fantasy-300">Complete more sessions to see productivity insights</p>
+            </div>
+        );
+    }
+
+    return (
+        <div className="bg-fantasy-800 p-4 rounded-lg border border-fantasy-600">
+            <div className="flex justify-between items-center mb-4">
+                <h4 className="text-lg font-bold">Quick Insights</h4>
+                <span className="text-xs text-fantasy-400">Last 30 days</span>
+            </div>
+            
+            <div className="space-y-3">
+                <div className="bg-fantasy-700 p-3 rounded text-center">
+                    <div className="text-xl font-bold text-fantasy-200">
+                        {insights.averageWordsPerMinute.toFixed(1)}
+                    </div>
+                    <div className="text-xs text-fantasy-400">Words/Minute</div>
+                </div>
+                
+                {insights.bestTimeOfDay && (
+                    <div className="bg-fantasy-700 p-3 rounded text-center">
+                        <div className="text-sm font-bold text-fantasy-200">{insights.bestTimeOfDay}</div>
+                        <div className="text-xs text-fantasy-400">Peak Time</div>
+                    </div>
+                )}
+                
+                <div className="bg-fantasy-700 p-3 rounded">
+                    <div className="flex justify-between items-center mb-1">
+                        <span className="text-xs text-fantasy-400">Consistency</span>
+                        <span className="text-xs font-bold">{Math.round(insights.consistencyScore)}%</span>
+                    </div>
+                    <div className="w-full bg-fantasy-600 rounded-full h-1">
+                        <div 
+                            className="bg-green-400 h-1 rounded-full transition-all duration-1000"
+                            style={{ width: `${insights.consistencyScore}%` }}
+                        />
+                    </div>
+                </div>
+                
+                {insights.recommendations.length > 0 && (
+                    <div className="bg-fantasy-700 p-3 rounded">
+                        <div className="text-xs font-medium text-fantasy-300 mb-1">💡 Quick Tip</div>
+                        <div className="text-xs text-fantasy-200">{insights.recommendations[0].text}</div>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
+
 export const Dashboard = () => {
     const { user, updateUser } = useAuth();
     const { pendingAchievement, closePendingAchievement, checkAndAwardAchievements } = useAchievementChecker();
@@ -246,8 +311,8 @@ export const Dashboard = () => {
         if (!user?.character || !currentStats) return null;
         
         const stats = user.character.stats;
-        const healthRegenRate = (1 + (stats.persistence * 0.1)) / 100;
-        const manaRegenRate = (2 + (stats.focus * 0.2)) / 100;
+        const healthRegenRate = (1.5 + (stats.persistence * 0.15)) / 100;
+        const manaRegenRate = (2.5 + (stats.focus * 0.25)) / 100;
         
         const healthMissing = currentStats.maxHealth - user.character.health;
         const manaMissing = currentStats.maxMana - user.character.mana;
@@ -267,7 +332,8 @@ export const Dashboard = () => {
             {/* Achievements Section - Prominent placement */}
             <AchievementSection />
             
-            <div className="grid lg:grid-cols-4 gap-6">
+            <div className="grid lg:grid-cols-5 gap-6">
+                {/* Main Character Status */}
                 <div className="lg:col-span-3">
                     <div className="bg-fantasy-800 p-6 rounded-lg border border-fantasy-600">
                         <h3 className="text-xl font-bold mb-4 glow-text">Character Status</h3>
@@ -331,8 +397,12 @@ export const Dashboard = () => {
                 
                 {/* Daily Progress Circle */}
                 <DailyProgress />
+                
+                {/* Quick Productivity Insights */}
+                <QuickProductivityInsights />
             </div>
             
+            {/* Quest Progress */}
             {user?.writingGoals && (
                 <div className="bg-fantasy-800 p-6 rounded-lg border border-fantasy-600">
                     <h3 className="text-xl font-bold mb-4 glow-text">Quest Progress</h3>
@@ -343,6 +413,7 @@ export const Dashboard = () => {
                 </div>
             )}
             
+            {/* Writing Statistics */}
             <div className="bg-fantasy-800 p-6 rounded-lg border border-fantasy-600">
                 <h3 className="text-xl font-bold mb-4 glow-text">Writing Statistics</h3>
                 <div className="grid grid-cols-4 gap-4 text-center">

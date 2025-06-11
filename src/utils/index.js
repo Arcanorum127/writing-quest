@@ -1,8 +1,11 @@
-// src/utils/index.js - REPLACE COMPLETELY
+// 1. FIRST: Update src/utils/index.js - ADD analyticsUtils export
 import { EQUIPMENT_DATABASE, STORE_DATABASE, CHARACTER_CLASSES, CLASS_ABILITIES, COMBAT_AREAS, MONSTER_TIERS } from '../data';
 
 // Export achievement utils
-export { achievementUtils } from './achievementUtils';
+export { achievementUtils } from '../utils/achievementUtils';
+
+// Export analytics utils from writingPrompts - FIXED
+export { analyticsUtils } from '../data/writingPrompts';
 
 // Utility functions for local storage
 export const storage = {
@@ -34,7 +37,7 @@ export const storage = {
 // Skill utility functions
 export const skillUtils = {
     getXpToNextLevel: (currentLevel) => {
-        return currentLevel; // Simple linear progression
+        return currentLevel;
     },
 
     getSkillLevel: (totalXp) => {
@@ -234,8 +237,8 @@ export const combatUtils = {
                 maxMana: 40,
                 attack: 8,
                 defense: 3,
-                critChance: 5, // Rebalanced: 5% base instead of 3%
-                critMultiplier: 1.5, // Rebalanced: 1.5x instead of 1.3x
+                critChance: 5,
+                critMultiplier: 1.5,
                 manaRegen: 1
             };
         }
@@ -244,13 +247,11 @@ export const combatUtils = {
         const level = character.level || 1;
         const characterClass = character.class;
         
-        // Rebalanced stat scaling
         let baseHealth = 50 + (stats.persistence * 10) + (level * 6);
         let baseMana = 50 + (stats.focus * 10) + (level * 4);
         let baseAttack = 10 + (stats.technique * 3) + (level * 1.5);
         let baseDefense = 5 + (stats.persistence * 1.5) + Math.floor(level * 0.8);
         
-        // Reduced class modifiers for better balance
         switch (characterClass) {
             case 'chronicler':
                 baseHealth *= 1.1;
@@ -285,8 +286,8 @@ export const combatUtils = {
             maxMana: Math.floor(baseMana + equipmentBonuses.mana),
             attack: Math.floor(baseAttack + equipmentBonuses.attack),
             defense: Math.floor(baseDefense + equipmentBonuses.defense),
-            critChance: 5 + (stats.creativity * 0.4) + equipmentBonuses.critChance, // Rebalanced
-            critMultiplier: 1.5 + (stats.creativity * 0.02), // Rebalanced
+            critChance: 2 + (stats.creativity * 0.175) + equipmentBonuses.critChance,
+            critMultiplier: 1.3 + (stats.creativity * 0.0175),
             manaRegen: Math.max(1, Math.floor(stats.focus / 4))
         };
     },
@@ -310,7 +311,6 @@ export const combatUtils = {
         const stats = character.stats;
         const combatStats = combatUtils.getCharacterCombatStats(character);
         
-        // Improved regeneration rates
         const healthRegenRate = (1.5 + (stats.persistence * 0.15)) / 100;
         const manaRegenRate = (2.5 + (stats.focus * 0.25)) / 100;
         
@@ -342,7 +342,6 @@ export const combatUtils = {
         
         const baseMonster = area.monsters[Math.floor(Math.random() * area.monsters.length)];
         
-        // Improved monster scaling
         const levelDifference = targetLevel - baseMonster.level;
         const scalingFactor = targetLevel <= 10 ? 1 + (levelDifference * 0.15) : Math.pow(1.12, levelDifference);
         
@@ -378,8 +377,8 @@ export const combatUtils = {
             defense: Math.floor(scaledMonster.defense * multiplier),
             displayName: `${scaledMonster.name}${tierDisplay}`,
             tierDisplay,
-            critChance: 5, // Same as player base
-            critMultiplier: 1.5 // Same as player base
+            critChance: 5,
+            critMultiplier: 1.5
         };
     },
 
@@ -387,11 +386,9 @@ export const combatUtils = {
         const baseAttack = attacker.attack || 10;
         const defense = defender.defense || 5;
         
-        // More predictable damage calculation
-        let damage = Math.max(3, baseAttack - Math.floor(defense * 0.7)); // Defense is 70% effective
+        let damage = Math.max(3, baseAttack - Math.floor(defense * 0.7));
         damage = Math.floor(damage * multiplier);
         
-        // Smaller variance for more consistent gameplay
         const variance = 0.1;
         const minDamage = Math.ceil(damage * (1 - variance));
         const maxDamage = Math.ceil(damage * (1 + variance));
@@ -405,7 +402,7 @@ export const combatUtils = {
     },
 
     isCriticalHit: (attacker) => {
-        const critChance = attacker.critChance || 5; // Rebalanced: 5% base
+        const critChance = attacker.critChance || 5;
         return Math.random() * 100 < critChance;
     },
 

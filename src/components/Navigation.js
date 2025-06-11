@@ -33,7 +33,8 @@ export const Navigation = ({ currentView, setCurrentView }) => {
             label: 'Writing', 
             items: [
                 { key: 'goals', label: 'Set Goals' },
-                { key: 'session', label: 'Writing Session' }
+                { key: 'session', label: 'Writing Session' },
+                { key: 'analytics', label: 'Analytics & Insights' }
             ]
         },
         { 
@@ -64,7 +65,11 @@ export const Navigation = ({ currentView, setCurrentView }) => {
     return (
         <nav className="bg-fantasy-800 border-b border-fantasy-600 p-4">
             <div className="max-w-6xl mx-auto flex justify-between items-center">
-                <h1 className="text-2xl font-bold glow-text">Writing Quest</h1>
+                <div className="flex items-center gap-4">
+                    <h1 className="text-2xl font-bold glow-text">Writing Quest</h1>
+                    <div className="text-sm text-fantasy-400">
+                    </div>
+                </div>
                 
                 <div className="flex gap-2 relative">
                     {navItems.map(item => (
@@ -82,19 +87,25 @@ export const Navigation = ({ currentView, setCurrentView }) => {
                                 {!item.single && (
                                     <span className="ml-1 text-xs">▼</span>
                                 )}
+                                {item.key === 'writing' && currentView === 'analytics' && (
+                                    <span className="absolute -top-1 -right-1 w-3 h-3 bg-purple-500 rounded-full"></span>
+                                )}
                             </button>
                             
                             {!item.single && activeDropdown === item.key && (
-                                <div className="absolute top-full left-0 mt-1 bg-fantasy-700 border border-fantasy-600 rounded shadow-lg z-50 min-w-[150px]">
+                                <div className="absolute top-full left-0 mt-1 bg-fantasy-700 border border-fantasy-600 rounded shadow-lg z-50 min-w-[180px]">
                                     {item.items.map(subItem => (
                                         <button
                                             key={subItem.key}
                                             onClick={() => handleDropdownClick(subItem.key)}
-                                            className={`block w-full text-left px-4 py-2 hover:bg-fantasy-600 transition-colors ${
+                                            className={`block w-full text-left px-4 py-2 hover:bg-fantasy-600 transition-colors relative ${
                                                 currentView === subItem.key ? 'bg-fantasy-600 text-white' : 'text-fantasy-300'
                                             }`}
                                         >
                                             {subItem.label}
+                                            {subItem.key === 'analytics' && (
+                                                <span className="ml-2 text-xs bg-purple-600 text-white px-1 rounded">NEW</span>
+                                            )}
                                         </button>
                                     ))}
                                 </div>
