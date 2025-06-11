@@ -1,7 +1,8 @@
+// src/components/CharacterCreation.js - REPLACE COMPLETELY
 import React, { useState } from 'react';
 import { useAuth } from '../App';
-import { REBALANCED_CHARACTER_CLASSES } from '../data/rebalanced';
-import { rebalancedCombatUtils } from '../data/rebalanced';
+import { CHARACTER_CLASSES, CLASS_ABILITIES } from '../data';
+import { combatUtils } from '../utils';
 
 export const CharacterCreation = () => {
     const [selectedClass, setSelectedClass] = useState('');
@@ -11,16 +12,15 @@ export const CharacterCreation = () => {
     const handleCreateCharacter = () => {
         if (!selectedClass || !characterName) return;
 
-        const classData = REBALANCED_CHARACTER_CLASSES[selectedClass];
+        const classData = CHARACTER_CLASSES[selectedClass];
         
         const tempCharacter = {
             class: selectedClass,
             level: 1,
-            stats: { ...classData.baseStats },
-            version: 'rebalanced' // Mark as using rebalanced system
+            stats: { ...classData.baseStats }
         };
         
-        const combatStats = rebalancedCombatUtils.getCharacterCombatStats(tempCharacter);
+        const combatStats = combatUtils.getCharacterCombatStats(tempCharacter);
         
         const character = {
             name: characterName,
@@ -45,8 +45,6 @@ export const CharacterCreation = () => {
             achievementLevel: 0,
             lastRegenTime: Date.now(),
             skillXp: {},
-            version: 'rebalanced',
-            createdAt: new Date().toISOString(),
             // Achievement tracking
             achievements: [],
             monstersDefeated: 0,
@@ -63,7 +61,7 @@ export const CharacterCreation = () => {
     };
 
     const getAbilityPreview = (classKey) => {
-        const abilities = rebalancedCombatUtils.getAvailableAbilities({ class: classKey, level: 10 });
+        const abilities = CLASS_ABILITIES[classKey] || [];
         return abilities.slice(0, 2);
     };
 
@@ -72,9 +70,9 @@ export const CharacterCreation = () => {
             <h2 className="text-4xl font-bold text-center mb-8 glow-text">Choose Your Path</h2>
             
             <div className="bg-blue-900/20 border border-blue-400 rounded-lg p-4 mb-8">
-                <h3 className="font-bold text-blue-200 mb-2">✨ Rebalanced Character System</h3>
+                <h3 className="font-bold text-blue-200 mb-2">✨ Balanced Character System</h3>
                 <p className="text-blue-100 text-sm">
-                    Characters now use an improved balanced stat system (8/10/13 distribution) with enhanced combat mechanics for better gameplay experience.
+                    Characters now use a balanced stat system (8/10/13 distribution) with enhanced combat mechanics for better gameplay experience.
                 </p>
             </div>
             
@@ -90,7 +88,7 @@ export const CharacterCreation = () => {
             </div>
 
             <div className="grid md:grid-cols-2 gap-6 mb-8">
-                {Object.entries(REBALANCED_CHARACTER_CLASSES).map(([key, classData]) => {
+                {Object.entries(CHARACTER_CLASSES).map(([key, classData]) => {
                     const abilities = getAbilityPreview(key);
                     return (
                         <div
@@ -106,7 +104,7 @@ export const CharacterCreation = () => {
                             <p className="text-fantasy-200 mb-4">{classData.description}</p>
                             
                             <div className="text-sm mb-4">
-                                <p className="font-medium text-fantasy-300 mb-2">Base Stats (Rebalanced):</p>
+                                <p className="font-medium text-fantasy-300 mb-2">Base Stats (Balanced):</p>
                                 <div className="grid grid-cols-2 gap-1">
                                     {Object.entries(classData.baseStats).map(([stat, value]) => (
                                         <div key={stat} className="flex justify-between">
